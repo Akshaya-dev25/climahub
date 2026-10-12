@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Globe, LayoutDashboard, UploadCloud, LogOut, User } from 'lucide-react';
+import { Globe, LayoutDashboard, UploadCloud, LogOut, Leaf } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -12,22 +12,35 @@ const Navbar = () => {
     navigate('/login');
   };
 
+  const getInitials = (name) => {
+    if (!name) return 'R';
+    return name
+      .split(' ')
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   return (
     <header className="navbar">
       <div className="navbar-inner">
         <Link to="/" className="nav-brand">
-          <div className="nav-brand-icon">
+          <div className="nav-brand-logo-wrapper">
             <Globe size={22} />
           </div>
-          <span>ClimaHub</span>
+          <div className="nav-brand-text">
+            <span className="nav-brand-title">ClimaHub</span>
+            <span className="nav-brand-tagline">Climate Intelligence</span>
+          </div>
         </Link>
 
         {isAuthenticated && (
-          <div className="nav-links">
+          <nav className="nav-links">
             <NavLink
               to="/"
               end
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             >
               <LayoutDashboard size={18} />
               <span>Dashboard</span>
@@ -35,31 +48,31 @@ const Navbar = () => {
 
             <NavLink
               to="/upload"
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             >
               <UploadCloud size={18} />
-              <span>Upload</span>
+              <span>Upload Dataset</span>
             </NavLink>
 
-            <div className="nav-user-section">
-              <div className="user-badge" title={user?.email || 'Logged in user'}>
-                <div className="user-avatar">
-                  {user?.name ? user.name.charAt(0).toUpperCase() : <User size={16} />}
+            <div className="nav-user-cluster">
+              <div className="user-profile-pill" title={user?.email || 'Authenticated Researcher'}>
+                <div className="user-avatar-circle">
+                  {getInitials(user?.name)}
                 </div>
                 <span>{user?.name || 'Researcher'}</span>
               </div>
 
               <button
                 type="button"
-                className="btn-logout"
+                className="btn-nav-logout"
                 onClick={handleLogout}
                 title="Sign out of ClimaHub"
               >
-                <LogOut size={16} />
-                <span>Logout</span>
+                <LogOut size={15} />
+                <span>Sign Out</span>
               </button>
             </div>
-          </div>
+          </nav>
         )}
       </div>
     </header>

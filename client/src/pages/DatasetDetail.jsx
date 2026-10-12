@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import {
+  AreaChart,
+  Area,
   LineChart,
   Line,
   BarChart,
@@ -25,18 +27,19 @@ import {
   Layers,
   TrendingUp,
   AlertCircle,
-  CheckCircle,
+  Clock,
+  Sparkles,
+  Info,
 } from 'lucide-react';
 
-// Palette for multiple metrics in charts
-const CHART_COLORS = [
-  '#0d9488', // Teal
+// Climate-themed palette for multi-metric charts
+const THEME_CHART_COLORS = [
+  '#0d9488', // Ocean Teal
   '#0284c7', // Sky Blue
-  '#f59e0b', // Amber
-  '#ec4899', // Pink
-  '#8b5cf6', // Purple
-  '#10b981', // Emerald
-  '#ef4444', // Red
+  '#047857', // Forest Green
+  '#d97706', // Sunny Amber
+  '#e11d48', // Coral
+  '#6366f1', // Indigo
 ];
 
 const DatasetDetail = () => {
@@ -48,13 +51,12 @@ const DatasetDetail = () => {
   const [newComment, setNewComment] = useState('');
 
   const [loading, setLoading] = useState(true);
-  const [commentsLoading, setCommentsLoading] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [error, setError] = useState('');
   const [commentError, setCommentError] = useState('');
 
   // Visualization state
-  const [chartType, setChartType] = useState('line'); // 'line' | 'bar'
+  const [chartType, setChartType] = useState('area'); // 'area' | 'line' | 'bar'
   const [selectedMetrics, setSelectedMetrics] = useState([]);
   const [xAxisKey, setXAxisKey] = useState('');
 
@@ -74,18 +76,18 @@ const DatasetDetail = () => {
         const ds = datasetRes.data.dataset;
         setDataset(ds);
 
-        // Determine initial X-Axis key
+        // Determine default X-Axis key
         const cols = ds.columns || [];
-        const possibleX = cols.find((c) =>
-          ['date', 'timestamp', 'station_id', 'city', 'location', 'id'].includes(c.toLowerCase())
+        const candidateX = cols.find((c) =>
+          ['date', 'timestamp', 'station_id', 'city', 'location', 'time'].includes(c.toLowerCase())
         ) || cols[0] || 'index';
-        setXAxisKey(possibleX);
+        setXAxisKey(candidateX);
       }
 
       if (statsRes.data?.success) {
         setStatsData(statsRes.data);
         const numericCols = statsRes.data.numericColumns || [];
-        // Default select up to 2 numeric metrics for clear initial visualization
+        // Default select up to 2 numeric metrics for readable visualization
         setSelectedMetrics(numericCols.slice(0, 2));
       }
 
@@ -122,7 +124,7 @@ const DatasetDetail = () => {
     } catch (err) {
       console.error('Failed to post comment:', err);
       setCommentError(
-        err.response?.data?.message || 'Failed to post comment. Make sure you are logged in.'
+        err.response?.data?.message || 'Failed to post comment. Ensure you are signed in.'
       );
     } finally {
       setSubmittingComment(false);
@@ -138,23 +140,33 @@ const DatasetDetail = () => {
     }
   };
 
+  const getInitials = (name) => {
+    if (!name) return 'R';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   if (loading) {
     return (
-      <div className="spinner-container">
-        <div className="spinner"></div>
-        <p>Loading dataset analytics and calculations...</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 380, gap: '1rem' }}>
+        <div className="spinner-loader" />
+        <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Analyzing climate matrices and compiling metrics...</p>
       </div>
     );
   }
 
   if (error || !dataset) {
     return (
-      <div style={{ maxWidth: 640, margin: '2rem auto' }}>
-        <div className="alert alert-danger" role="alert">
+      <div style={{ maxWidth: 640, margin: '3rem auto', textAlign: 'center' }}>
+        <div className="alert-banner alert-error" role="alert" style={{ justifyContent: 'center' }}>
           <AlertCircle size={20} />
           <span>{error || 'Dataset not found.'}</span>
         </div>
-        <Link to="/" className="btn btn-secondary">
+        <Link to="/" className="btn btn-secondary" style={{ marginTop: '1rem' }}>
           <ArrowLeft size={16} />
           <span>Return to Dashboard</span>
         </Link>
@@ -166,7 +178,6 @@ const DatasetDetail = () => {
   const statsMap = statsData?.stats || {};
   const chartData = (dataset.parsedData || []).map((row, index) => {
     const item = { ...row, _rowIndex: index + 1 };
-    // Coerce numeric metrics to real numbers for charts
     numericColumns.forEach((col) => {
       item[col] = Number(row[col]) || 0;
     });
@@ -175,122 +186,126 @@ const DatasetDetail = () => {
 
   return (
     <div>
-      {/* Top Navigation */}
-      <Link to="/" className="detail-nav-back">
-        <ArrowLeft size={16} />
-        <span>Back to Datasets</span>
-      </Link>
+      {/* Top Back Navigation */}
+      <div className="detail-top-nav-wrap">
+        <Link to="/" className="back-link-stylish">
+          <ArrowLeft size={15} />
+          <span>Back to Climate Repository</span>
+        </Link>
+      </div>
 
-      {/* Dataset Header Card */}
-      <div className="detail-header">
-        <div className="detail-title-row">
+      {/* Main Dataset Header */}
+      <div className="detail-main-header">
+        <div className="detail-header-accent" />
+
+        <div className="detail-header-headline-row">
           <div>
-            <h1 className="detail-title">{dataset.title}</h1>
-            <p className="detail-desc">{dataset.description || 'No description provided.'}</p>
+            <h1 className="detail-header-title">{dataset.title}</h1>
+            <p className="detail-header-desc">
+              {dataset.description || 'Public academic climate dataset deposited in ClimaHub without supplementary methodology notes.'}
+            </p>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <span
               style={{
-                backgroundColor: 'var(--primary-light)',
-                color: 'var(--primary-text)',
-                padding: '0.45rem 0.9rem',
+                backgroundColor: 'var(--sand-100)',
+                color: 'var(--forest-900)',
+                border: '1px solid var(--border-card)',
+                padding: '0.45rem 0.95rem',
                 borderRadius: 'var(--radius-full)',
                 fontWeight: 700,
-                fontSize: '0.875rem',
+                fontSize: '0.85rem',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.4rem',
+                gap: '0.45rem',
               }}
             >
-              <FileSpreadsheet size={16} />
-              <span>{dataset.fileName}</span>
+              <FileSpreadsheet size={16} color="var(--ocean-700)" />
+              <span style={{ fontFamily: 'var(--font-mono)' }}>{dataset.fileName}</span>
             </span>
           </div>
         </div>
 
         {/* Quick Meta Cards */}
-        <div className="detail-stats-grid">
-          <div className="stat-metric-card">
-            <div className="stat-metric-label">Total Observations</div>
-            <div className="stat-metric-value">{dataset.rowCount?.toLocaleString() || 0}</div>
+        <div className="detail-quick-stats-grid">
+          <div className="quick-stat-box">
+            <div className="quick-stat-label">Total Observations</div>
+            <div className="quick-stat-value">{(dataset.rowCount || 0).toLocaleString()}</div>
           </div>
 
-          <div className="stat-metric-card">
-            <div className="stat-metric-label">Numeric Metrics</div>
-            <div className="stat-metric-value">{numericColumns.length}</div>
+          <div className="quick-stat-box">
+            <div className="quick-stat-label">Numeric Variables</div>
+            <div className="quick-stat-value">{numericColumns.length}</div>
           </div>
 
-          <div className="stat-metric-card">
-            <div className="stat-metric-label">Uploaded By</div>
-            <div
-              style={{
-                fontSize: '1.15rem',
-                fontWeight: 700,
-                color: 'var(--text-main)',
-                marginTop: '0.35rem',
-              }}
-            >
+          <div className="quick-stat-box">
+            <div className="quick-stat-label">Lead Investigator</div>
+            <div className="quick-stat-value" style={{ fontSize: '1.25rem' }}>
               {dataset.uploadedBy?.name || 'Anonymous'}
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: '0.775rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
               {dataset.uploadedBy?.email}
             </div>
           </div>
 
-          <div className="stat-metric-card">
-            <div className="stat-metric-label">Upload Timestamp</div>
-            <div
-              style={{
-                fontSize: '1.15rem',
-                fontWeight: 700,
-                color: 'var(--text-main)',
-                marginTop: '0.35rem',
-              }}
-            >
-              {new Date(dataset.createdAt).toLocaleDateString()}
+          <div className="quick-stat-box">
+            <div className="quick-stat-label">Ingested On</div>
+            <div className="quick-stat-value" style={{ fontSize: '1.25rem' }}>
+              {new Date(dataset.createdAt).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: '0.775rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
               {new Date(dataset.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
           </div>
         </div>
       </div>
 
-      {/* 1. VISUALIZATION SECTION (Recharts: Line and Bar Chart) */}
-      <section className="detail-section">
-        <div className="detail-section-header">
-          <div className="detail-section-title">
-            <BarChart2 size={20} color="var(--primary)" />
-            <span>Interactive Data Visualization</span>
+      {/* 1. CLEANER CHART CARD WITH GRADIENT AREA / LINE / BAR CHART */}
+      <section className="science-card-section">
+        <div className="science-card-header">
+          <div className="science-card-title">
+            <BarChart2 size={22} color="var(--ocean-700)" />
+            <span>Interactive Climate Visualizer</span>
           </div>
 
-          <div className="chart-controls">
-            {/* Chart Type Toggle */}
-            <div className="btn-toggle-group">
+          <div className="chart-pills-row">
+            {/* Chart Type Selector */}
+            <div className="chart-type-switcher">
               <button
                 type="button"
-                className={`btn-toggle ${chartType === 'line' ? 'active' : ''}`}
-                onClick={() => setChartType('line')}
+                className={`switcher-btn ${chartType === 'area' ? 'active' : ''}`}
+                onClick={() => setChartType('area')}
               >
-                Line Chart
+                Gradient Area
               </button>
               <button
                 type="button"
-                className={`btn-toggle ${chartType === 'bar' ? 'active' : ''}`}
+                className={`switcher-btn ${chartType === 'line' ? 'active' : ''}`}
+                onClick={() => setChartType('line')}
+              >
+                Line Plot
+              </button>
+              <button
+                type="button"
+                className={`switcher-btn ${chartType === 'bar' ? 'active' : ''}`}
                 onClick={() => setChartType('bar')}
               >
-                Bar Chart
+                Bar Columns
               </button>
             </div>
 
-            {/* X-Axis selector */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+            {/* X-Axis Selector */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <span style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--sand-500)' }}>
                 X-Axis:
               </span>
               <select
-                className="chart-select"
+                className="chart-axis-select"
                 value={xAxisKey}
                 onChange={(e) => setXAxisKey(e.target.value)}
               >
@@ -305,49 +320,51 @@ const DatasetDetail = () => {
         </div>
 
         {/* Metric Selector Pills */}
-        <div style={{ marginBottom: '1.25rem' }}>
+        <div style={{ marginBottom: '1.5rem' }}>
           <div
             style={{
-              fontSize: '0.8rem',
+              fontSize: '0.75rem',
               fontWeight: 700,
               textTransform: 'uppercase',
-              color: 'var(--text-muted)',
-              marginBottom: '0.5rem',
+              letterSpacing: '0.05em',
+              color: 'var(--sand-500)',
+              marginBottom: '0.65rem',
             }}
           >
-            Select Numeric Metric(s) to Display:
+            Select Climate Variable(s) to Plot:
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem' }}>
             {numericColumns.map((col, idx) => {
               const isSelected = selectedMetrics.includes(col);
-              const color = CHART_COLORS[idx % CHART_COLORS.length];
+              const color = THEME_CHART_COLORS[idx % THEME_CHART_COLORS.length];
               return (
                 <button
                   key={col}
                   type="button"
                   onClick={() => handleToggleMetric(col)}
                   style={{
-                    backgroundColor: isSelected ? `${color}18` : 'var(--bg-surface-secondary)',
-                    borderColor: isSelected ? color : 'var(--border)',
+                    backgroundColor: isSelected ? `${color}15` : 'var(--sand-50)',
+                    borderColor: isSelected ? color : 'var(--border-card)',
                     borderWidth: '1px',
                     borderStyle: 'solid',
-                    color: isSelected ? color : 'var(--text-muted)',
-                    padding: '0.35rem 0.75rem',
+                    color: isSelected ? color : 'var(--sand-700)',
+                    padding: '0.35rem 0.85rem',
                     borderRadius: 'var(--radius-full)',
                     fontSize: '0.825rem',
                     fontWeight: isSelected ? 700 : 500,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.4rem',
+                    gap: '0.45rem',
                     cursor: 'pointer',
+                    transition: 'all 0.15s ease',
                   }}
                 >
                   <span
                     style={{
-                      width: 8,
-                      height: 8,
+                      width: 9,
+                      height: 9,
                       borderRadius: '50%',
-                      backgroundColor: isSelected ? color : '#94a3b8',
+                      backgroundColor: isSelected ? color : '#a8a29e',
                     }}
                   />
                   <span>{col}</span>
@@ -357,74 +374,131 @@ const DatasetDetail = () => {
           </div>
         </div>
 
-        {/* Chart Canvas */}
-        <div style={{ width: '100%', height: 380, marginTop: '1.5rem' }}>
+        {/* Recharts Canvas */}
+        <div style={{ width: '100%', height: 400 }}>
           {numericColumns.length === 0 ? (
-            <div className="empty-state" style={{ padding: '2rem' }}>
-              <p>No numeric columns detected in this dataset to generate charts.</p>
+            <div className="empty-state-friendly" style={{ padding: '2.5rem' }}>
+              <p>No numeric time-series columns detected to graph in this dataset.</p>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              {chartType === 'line' ? (
-                <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 25 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              {chartType === 'area' ? (
+                <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 25 }}>
+                  <defs>
+                    {numericColumns.map((metric, idx) => {
+                      const color = THEME_CHART_COLORS[idx % THEME_CHART_COLORS.length];
+                      return (
+                        <linearGradient key={`grad-${metric}`} id={`grad-${metric}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={color} stopOpacity={0.4} />
+                          <stop offset="95%" stopColor={color} stopOpacity={0.02} />
+                        </linearGradient>
+                      );
+                    })}
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false} />
                   <XAxis
                     dataKey={xAxisKey}
-                    stroke="#64748b"
+                    stroke="#78716c"
                     fontSize={12}
                     tickLine={false}
                     interval="preserveStartEnd"
                   />
-                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} />
+                  <YAxis stroke="#78716c" fontSize={12} tickLine={false} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#ffffff',
-                      borderRadius: '8px',
-                      border: '1px solid #e2e8f0',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      borderRadius: '12px',
+                      border: '1px solid #e7e5e4',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                      fontSize: '0.875rem',
                     }}
                   />
                   <Legend verticalAlign="top" height={36} />
-                  {selectedMetrics.map((metric, idx) => (
-                    <Line
-                      key={metric}
-                      type="monotone"
-                      dataKey={metric}
-                      stroke={CHART_COLORS[numericColumns.indexOf(metric) % CHART_COLORS.length]}
-                      strokeWidth={2.5}
-                      dot={{ r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                  ))}
+                  {selectedMetrics.map((metric) => {
+                    const color = THEME_CHART_COLORS[numericColumns.indexOf(metric) % THEME_CHART_COLORS.length];
+                    return (
+                      <Area
+                        key={metric}
+                        type="monotone"
+                        dataKey={metric}
+                        stroke={color}
+                        strokeWidth={2.5}
+                        fillOpacity={1}
+                        fill={`url(#grad-${metric})`}
+                        dot={{ r: 3 }}
+                        activeDot={{ r: 6 }}
+                      />
+                    );
+                  })}
+                </AreaChart>
+              ) : chartType === 'line' ? (
+                <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 25 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false} />
+                  <XAxis
+                    dataKey={xAxisKey}
+                    stroke="#78716c"
+                    fontSize={12}
+                    tickLine={false}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis stroke="#78716c" fontSize={12} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#ffffff',
+                      borderRadius: '12px',
+                      border: '1px solid #e7e5e4',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                      fontSize: '0.875rem',
+                    }}
+                  />
+                  <Legend verticalAlign="top" height={36} />
+                  {selectedMetrics.map((metric) => {
+                    const color = THEME_CHART_COLORS[numericColumns.indexOf(metric) % THEME_CHART_COLORS.length];
+                    return (
+                      <Line
+                        key={metric}
+                        type="monotone"
+                        dataKey={metric}
+                        stroke={color}
+                        strokeWidth={2.5}
+                        dot={{ r: 4 }}
+                        activeDot={{ r: 6 }}
+                      />
+                    );
+                  })}
                 </LineChart>
               ) : (
                 <BarChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 25 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false} />
                   <XAxis
                     dataKey={xAxisKey}
-                    stroke="#64748b"
+                    stroke="#78716c"
                     fontSize={12}
                     tickLine={false}
                     interval="preserveStartEnd"
                   />
-                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} />
+                  <YAxis stroke="#78716c" fontSize={12} tickLine={false} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#ffffff',
-                      borderRadius: '8px',
-                      border: '1px solid #e2e8f0',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      borderRadius: '12px',
+                      border: '1px solid #e7e5e4',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                      fontSize: '0.875rem',
                     }}
                   />
                   <Legend verticalAlign="top" height={36} />
-                  {selectedMetrics.map((metric) => (
-                    <Bar
-                      key={metric}
-                      dataKey={metric}
-                      fill={CHART_COLORS[numericColumns.indexOf(metric) % CHART_COLORS.length]}
-                      radius={[4, 4, 0, 0]}
-                    />
-                  ))}
+                  {selectedMetrics.map((metric) => {
+                    const color = THEME_CHART_COLORS[numericColumns.indexOf(metric) % THEME_CHART_COLORS.length];
+                    return (
+                      <Bar
+                        key={metric}
+                        dataKey={metric}
+                        fill={color}
+                        radius={[6, 6, 0, 0]}
+                      />
+                    );
+                  })}
                 </BarChart>
               )}
             </ResponsiveContainer>
@@ -432,33 +506,33 @@ const DatasetDetail = () => {
         </div>
       </section>
 
-      {/* 2. STATS TABLE (mean, min, max from /api/datasets/:id/stats) */}
-      <section className="detail-section">
-        <div className="detail-section-header">
-          <div className="detail-section-title">
-            <Table size={20} color="var(--secondary)" />
-            <span>Summary Statistics (Mean, Min, Max)</span>
+      {/* 2. NICER STATS TABLE WITH COLORED MEAN / MIN / MAX BADGES */}
+      <section className="science-card-section">
+        <div className="science-card-header">
+          <div className="science-card-title">
+            <Table size={22} color="var(--forest-700)" />
+            <span>Summary Statistics Matrix</span>
           </div>
           <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Computed across {statsData?.totalRows || 0} observations
+            Computed across {(statsData?.totalRows || 0).toLocaleString()} observations
           </span>
         </div>
 
         {numericColumns.length === 0 ? (
           <p style={{ color: 'var(--text-muted)' }}>
-            No numeric statistics available for this dataset.
+            No numeric variables available for automated summary statistics.
           </p>
         ) : (
-          <div className="table-responsive">
-            <table className="data-table">
+          <div className="stats-table-wrapper">
+            <table className="science-table">
               <thead>
                 <tr>
-                  <th>Column / Metric</th>
-                  <th>Count</th>
-                  <th>Mean</th>
-                  <th>Min</th>
-                  <th>Max</th>
-                  <th>Sum</th>
+                  <th>Climate Variable</th>
+                  <th>Valid Rows</th>
+                  <th>Mean (Average)</th>
+                  <th>Min Value</th>
+                  <th>Max Value</th>
+                  <th>Aggregate Sum</th>
                 </tr>
               </thead>
               <tbody>
@@ -466,20 +540,30 @@ const DatasetDetail = () => {
                   const stat = statsMap[col] || {};
                   return (
                     <tr key={col}>
-                      <td style={{ fontWeight: 700 }}>
-                        <span className="font-mono">{col}</span>
+                      <td style={{ fontWeight: 700, color: 'var(--forest-900)' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)' }}>{col}</span>
                       </td>
-                      <td>{stat.count ?? '-'}</td>
-                      <td style={{ fontWeight: 600, color: 'var(--primary)' }}>
-                        {stat.mean !== undefined ? stat.mean.toLocaleString() : '-'}
+                      <td style={{ color: 'var(--sand-700)' }}>
+                        {stat.count !== undefined ? stat.count.toLocaleString() : '-'}
                       </td>
-                      <td style={{ color: '#0284c7' }}>
-                        {stat.min !== undefined ? stat.min.toLocaleString() : '-'}
+                      <td>
+                        <span className="badge-metric-mean">
+                          {stat.mean !== undefined ? stat.mean.toLocaleString() : '-'}
+                        </span>
                       </td>
-                      <td style={{ color: '#ef4444' }}>
-                        {stat.max !== undefined ? stat.max.toLocaleString() : '-'}
+                      <td>
+                        <span className="badge-metric-min">
+                          {stat.min !== undefined ? stat.min.toLocaleString() : '-'}
+                        </span>
                       </td>
-                      <td>{stat.sum !== undefined ? stat.sum.toLocaleString() : '-'}</td>
+                      <td>
+                        <span className="badge-metric-max">
+                          {stat.max !== undefined ? stat.max.toLocaleString() : '-'}
+                        </span>
+                      </td>
+                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--sand-800)' }}>
+                        {stat.sum !== undefined ? stat.sum.toLocaleString() : '-'}
+                      </td>
                     </tr>
                   );
                 })}
@@ -489,20 +573,20 @@ const DatasetDetail = () => {
         )}
       </section>
 
-      {/* Raw Data Preview (First 10 Rows) */}
-      <section className="detail-section">
-        <div className="detail-section-header">
-          <div className="detail-section-title">
-            <Layers size={20} color="var(--primary)" />
-            <span>Dataset Preview (First {Math.min(10, dataset.parsedData?.length || 0)} rows)</span>
+      {/* Raw Data Preview (First 10 Observations) */}
+      <section className="science-card-section">
+        <div className="science-card-header">
+          <div className="science-card-title">
+            <Layers size={22} color="var(--sky-600)" />
+            <span>Sample Observations Preview (First {Math.min(10, dataset.parsedData?.length || 0)} records)</span>
           </div>
         </div>
 
-        <div className="table-responsive">
-          <table className="data-table">
+        <div className="stats-table-wrapper">
+          <table className="science-table">
             <thead>
               <tr>
-                <th style={{ width: 45 }}>#</th>
+                <th style={{ width: 48 }}>#</th>
                 {dataset.columns?.map((col) => (
                   <th key={col}>{col}</th>
                 ))}
@@ -511,9 +595,9 @@ const DatasetDetail = () => {
             <tbody>
               {dataset.parsedData?.slice(0, 10).map((row, idx) => (
                 <tr key={idx}>
-                  <td style={{ color: 'var(--text-subtle)', fontSize: '0.8rem' }}>{idx + 1}</td>
+                  <td style={{ color: 'var(--sand-500)', fontSize: '0.8rem' }}>{idx + 1}</td>
                   {dataset.columns?.map((col) => (
-                    <td key={col} className="font-mono">
+                    <td key={col} style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
                       {String(row[col] ?? '')}
                     </td>
                   ))}
@@ -524,79 +608,90 @@ const DatasetDetail = () => {
         </div>
       </section>
 
-      {/* 3. COMMENTS SECTION */}
-      <section className="detail-section">
-        <div className="detail-section-header">
-          <div className="detail-section-title">
-            <MessageSquare size={20} color="var(--primary)" />
-            <span>Discussion & Comments ({comments.length})</span>
+      {/* 3. CHAT-STYLE COMMENTS SECTION WITH AVATAR INITIALS */}
+      <section className="science-card-section">
+        <div className="science-card-header">
+          <div className="science-card-title">
+            <MessageSquare size={22} color="var(--forest-700)" />
+            <span>Peer Review & Academic Discussion ({comments.length})</span>
           </div>
         </div>
 
         {commentError && (
-          <div className="alert alert-danger" role="alert">
+          <div className="alert-banner alert-error" role="alert">
             <AlertCircle size={18} />
             <span>{commentError}</span>
           </div>
         )}
 
-        {/* Add comment form */}
-        <form onSubmit={handleAddComment} className="comment-form" style={{ marginBottom: '2rem' }}>
+        {/* Comments Chat Thread */}
+        {comments.length === 0 ? (
+          <div
+            style={{
+              padding: '2.5rem',
+              textAlign: 'center',
+              color: 'var(--text-muted)',
+              backgroundColor: 'var(--sand-50)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px dashed var(--border-card)',
+              marginBottom: '2rem',
+            }}
+          >
+            <p style={{ fontWeight: 600 }}>No commentary yet for this observation series.</p>
+            <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
+              Initiate the scientific discussion regarding measurement methodology or anomalies below.
+            </p>
+          </div>
+        ) : (
+          <div className="comments-chat-thread">
+            {comments.map((c) => (
+              <div key={c._id} className="comment-bubble-row">
+                <div className="comment-avatar-bubble">
+                  {getInitials(c.user?.name)}
+                </div>
+
+                <div className="comment-card-bubble">
+                  <div className="comment-header-row">
+                    <span className="comment-author-name">{c.user?.name || 'Researcher'}</span>
+                    <span className="comment-timestamp">
+                      {c.createdAt
+                        ? new Date(c.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : 'Recently'}
+                    </span>
+                  </div>
+                  <div className="comment-text-content">{c.text}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add Comment Input Form */}
+        <form onSubmit={handleAddComment} className="comment-compose-card">
           <textarea
-            className="comment-textarea"
-            placeholder="Share insights, methodology notes, or inquiries about this dataset..."
+            className="comment-textarea-modern"
+            placeholder="Share research notes, sensor calibration notes, or ask a question about this dataset..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             required
           />
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.75rem' }}>
             <button
               type="submit"
               className="btn btn-primary"
               disabled={submittingComment || !newComment.trim()}
             >
               <Send size={16} />
-              <span>{submittingComment ? 'Posting...' : 'Post Comment'}</span>
+              <span>{submittingComment ? 'Posting...' : 'Post Commentary'}</span>
             </button>
           </div>
         </form>
-
-        {/* Comments List */}
-        {comments.length === 0 ? (
-          <div
-            style={{
-              padding: '2rem',
-              textAlign: 'center',
-              color: 'var(--text-muted)',
-              backgroundColor: 'var(--bg-surface-secondary)',
-              borderRadius: 'var(--radius-md)',
-            }}
-          >
-            <p>No comments yet. Start the academic discussion by posting above!</p>
-          </div>
-        ) : (
-          <div className="comments-list">
-            {comments.map((c) => (
-              <div key={c._id} className="comment-card">
-                <div className="comment-header">
-                  <span className="comment-author">{c.user?.name || 'Researcher'}</span>
-                  <span className="comment-time">
-                    {c.createdAt
-                      ? new Date(c.createdAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })
-                      : 'Just now'}
-                  </span>
-                </div>
-                <p className="comment-body">{c.text}</p>
-              </div>
-            ))}
-          </div>
-        )}
       </section>
     </div>
   );

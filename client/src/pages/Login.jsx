@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, AlertCircle } from 'lucide-react';
+import {
+  Globe,
+  Leaf,
+  Waves,
+  LogIn,
+  AlertCircle,
+  BarChart3,
+  ShieldCheck,
+} from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -42,68 +50,131 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-wrapper">
-      <div className="auth-card">
-        <div className="auth-header">
-          <div className="auth-icon">
-            <LogIn size={26} />
+    <div className="split-auth-container">
+      <div className="split-auth-box">
+        {/* Left Side: Climate-Themed Gradient Panel */}
+        <div className="split-hero-panel">
+          <div>
+            <div className="split-brand-badge">
+              <Globe size={15} />
+              <span>CLIMAHUB RESEARCH PORTAL</span>
+            </div>
+
+            <div className="split-headline-wrap">
+              <h2>Empowering Earth & Atmospheric Science</h2>
+              <p>
+                A centralized repository designed for universities and institutes to share,
+                explore, and visualize open environmental datasets.
+              </p>
+            </div>
+
+            <div className="split-features-list">
+              <div className="split-feature-item">
+                <div className="split-feature-icon">
+                  <Leaf size={18} />
+                </div>
+                <div>
+                  <div className="split-feature-title">Standardized Climate Metrics</div>
+                  <div className="split-feature-desc">
+                    CO2 PPM, surface temperatures, precipitation, and humidity streams.
+                  </div>
+                </div>
+              </div>
+
+              <div className="split-feature-item">
+                <div className="split-feature-icon">
+                  <Waves size={18} />
+                </div>
+                <div>
+                  <div className="split-feature-title">Interactive Time-Series Visuals</div>
+                  <div className="split-feature-desc">
+                    Dynamic line & area charts with automated mean, min, and max computations.
+                  </div>
+                </div>
+              </div>
+
+              <div className="split-feature-item">
+                <div className="split-feature-icon">
+                  <ShieldCheck size={18} />
+                </div>
+                <div>
+                  <div className="split-feature-title">Verified University Access</div>
+                  <div className="split-feature-desc">
+                    Secure JWT authentication and dataset attribution for scientists.
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <h1 className="auth-title">Welcome Back</h1>
-          <p className="auth-subtitle">Sign in to access climate datasets and analytics</p>
+
+          <div className="split-footer-note">
+            ClimaHub v1.0 • Built for Open Science & Climate Resilience
+          </div>
         </div>
 
-        {error && (
-          <div className="alert alert-danger" role="alert">
-            <AlertCircle size={18} style={{ flexShrink: 0 }} />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label className="form-label" htmlFor="email">
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              className="form-input"
-              placeholder="researcher@university.edu"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoFocus
-            />
+        {/* Right Side: Clean Form Panel */}
+        <div className="split-form-panel">
+          <div className="split-form-header">
+            <h1 className="split-form-title">Welcome Back</h1>
+            <p className="split-form-sub">Sign in with your academic credentials to continue</p>
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="password">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              className="form-input"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+          {error && (
+            <div className="alert-banner alert-error" role="alert">
+              <AlertCircle size={18} style={{ flexShrink: 0 }} />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="form-group-modern">
+              <label className="form-label-modern" htmlFor="login-email">
+                Academic Email
+              </label>
+              <input
+                id="login-email"
+                type="email"
+                className="form-input-modern"
+                placeholder="researcher@university.edu"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
+
+            <div className="form-group-modern">
+              <label className="form-label-modern" htmlFor="login-password">
+                Password
+              </label>
+              <input
+                id="login-password"
+                type="password"
+                className="form-input-modern"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+              style={{ width: '100%', marginTop: '0.75rem', padding: '0.8rem' }}
+            >
+              <LogIn size={18} />
+              <span>{isSubmitting ? 'Authenticating...' : 'Sign In to Portal'}</span>
+            </button>
+          </form>
+
+          <div style={{ marginTop: '1.75rem', textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+            New to the platform?{' '}
+            <Link to="/register" style={{ fontWeight: 700, color: 'var(--forest-800)' }}>
+              Create an account
+            </Link>
           </div>
-
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={isSubmitting}
-            style={{ width: '100%', marginTop: '0.5rem' }}
-          >
-            {isSubmitting ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-
-        <div className="auth-footer">
-          Don't have an account yet?{' '}
-          <Link to="/register">Register here</Link>
         </div>
       </div>
     </div>
