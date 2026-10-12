@@ -1,0 +1,11 @@
+{
+  "name": "climahub",
+  "version": "1.0.0",
+  "description": "ClimaHub - Centralized Climate Dataset Platform",
+  "scripts": {
+    "dev": "npm run dev --prefix server",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "build:client": "npm run build --prefix client"
+  }
+}

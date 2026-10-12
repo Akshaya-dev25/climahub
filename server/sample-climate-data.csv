@@ -1,0 +1,11 @@
+station_id,city,country,date,temperature_c,humidity_pct,rainfall_mm,wind_speed_kmh,co2_ppm
+ST-001,Zurich,Switzerland,2026-01-15,14.5,72.4,12.2,15.8,418.5
+ST-002,Nairobi,Kenya,2026-01-15,26.8,58.1,0.0,18.2,416.9
+ST-003,Tokyo,Japan,2026-01-15,8.2,64.0,5.4,12.0,421.3
+ST-004,Vancouver,Canada,2026-01-15,6.1,88.5,24.6,22.1,417.8
+ST-005,Melbourne,Australia,2026-01-15,31.4,42.0,0.0,25.4,415.2
+ST-006,Reykjavik,Iceland,2026-01-15,-2.5,81.2,8.0,34.7,419.0
+ST-007,Sao Paulo,Brazil,2026-01-15,28.3,76.5,18.4,11.3,417.1
+ST-008,Mumbai,India,2026-01-15,32.1,68.9,0.0,14.0,422.6
+ST-009,Cairo,Egypt,2026-01-15,22.0,45.3,0.0,19.5,420.1
+ST-010,Oslo,Norway,2026-01-15,-4.2,85.0,11.5,16.8,418.9
